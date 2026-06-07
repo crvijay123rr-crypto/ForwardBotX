@@ -9,6 +9,6 @@ app = Client(
     plugins=dict(root="plugins")
 )
 
-print("Bot Started")
+print("🚀 ForwardBotX Started")
 
 app.run()
