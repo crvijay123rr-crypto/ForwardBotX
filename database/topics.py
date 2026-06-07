@@ -25,6 +25,8 @@ async def create_topic(
 
             "first_message_id": first_message_id,
 
+            "first_message_link": None,
+
             "message_count": 1
         }
     )
@@ -63,6 +65,45 @@ async def increase_topic_count(
     )
 
 
+async def save_topic_link(
+    task_id,
+    topic_name,
+    link
+):
+
+    await topics.update_one(
+        {
+            "task_id": task_id,
+            "topic_name": topic_name
+        },
+        {
+            "$set": {
+                "first_message_link": link
+            }
+        }
+    )
+
+
+async def get_topic_link(
+    task_id,
+    topic_name
+):
+
+    topic = await topics.find_one(
+        {
+            "task_id": task_id,
+            "topic_name": topic_name
+        }
+    )
+
+    if not topic:
+        return None
+
+    return topic.get(
+        "first_message_link"
+    )
+
+
 async def get_all_topics(
     task_id
 ):
@@ -85,6 +126,19 @@ async def total_topics(
     )
 
 
+async def delete_topic(
+    task_id,
+    topic_name
+):
+
+    await topics.delete_one(
+        {
+            "task_id": task_id,
+            "topic_name": topic_name
+        }
+    )
+
+
 async def delete_topics(
     task_id
 ):
@@ -92,5 +146,60 @@ async def delete_topics(
     await topics.delete_many(
         {
             "task_id": task_id
+        }
+    )
+
+
+async def topic_exists(
+    task_id,
+    topic_name
+):
+
+    topic = await topics.find_one(
+        {
+            "task_id": task_id,
+            "topic_name": topic_name
+        }
+    )
+
+    return bool(topic)
+
+
+async def get_topic_count(
+    task_id,
+    topic_name
+):
+
+    topic = await topics.find_one(
+        {
+            "task_id": task_id,
+            "topic_name": topic_name
+        }
+    )
+
+    if not topic:
+        return 0
+
+    return topic.get(
+        "message_count",
+        0
+    )
+
+
+async def rename_topic(
+    task_id,
+    old_name,
+    new_name
+):
+
+    await topics.update_one(
+        {
+            "task_id": task_id,
+            "topic_name": old_name
+        },
+        {
+            "$set": {
+                "topic_name": new_name
+            }
         }
     )
