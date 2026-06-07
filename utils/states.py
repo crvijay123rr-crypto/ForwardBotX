@@ -1,3 +1,9 @@
 FIRST_LINK = {}
+
 LAST_LINK = {}
+
 DESTINATION = {}
+
+CAPTION_WAIT = {}
+
+BUTTON_WAIT = {}
