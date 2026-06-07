@@ -1,0 +1,3 @@
+FIRST_LINK = {}
+LAST_LINK = {}
+DESTINATION = {}
