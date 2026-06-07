@@ -1,22 +1,45 @@
 from database.mongo import settings
 
-async def set_filename_mode(
+DEFAULT_SETTINGS = {
+
+    "filename_mode": "keep_original",
+
+    "topic_detection": True,
+
+    "caption_enabled": False,
+
+    "button_enabled": False,
+
+    "duplicate_skip": True,
+
+    "summary_enabled": True
+}
+
+async def get_settings(user_id):
+
+    data = await settings.find_one(
+        {"user_id": user_id}
+    )
+
+    if not data:
+
+        await settings.insert_one({
+            "user_id": user_id,
+            **DEFAULT_SETTINGS
+        })
+
+        return DEFAULT_SETTINGS
+
+    return data
+
+async def update_setting(
     user_id,
-    mode
+    key,
+    value
 ):
 
     await settings.update_one(
         {"user_id": user_id},
-        {
-            "$set": {
-                "filename_mode": mode
-            }
-        },
+        {"$set": {key: value}},
         upsert=True
-    )
-
-async def get_settings(user_id):
-
-    return await settings.find_one(
-        {"user_id": user_id}
     )
