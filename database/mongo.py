@@ -6,8 +6,9 @@ mongo = AsyncIOMotorClient(MONGO_URI)
 db = mongo["FORWARD_BOT_X"]
 
 users = db.users
-settings = db.settings
 tasks = db.tasks
+settings = db.settings
 topics = db.topics
-buttons = db.buttons
 captions = db.captions
+buttons = db.buttons
+logs = db.logs
