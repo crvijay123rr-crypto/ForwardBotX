@@ -10,3 +10,4 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 MONGO_URI = os.getenv("MONGO_URI")
 
 OWNER_ID = int(os.getenv("OWNER_ID"))
+LOG_CHANNEL = int(os.getenv("LOG_CHANNEL"))
