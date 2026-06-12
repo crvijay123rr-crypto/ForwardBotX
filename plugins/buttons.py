@@ -5,26 +5,28 @@ from pyrogram.types import (
 )
 
 from database.buttons import (
-    get_buttons,
     add_button,
-    delete_button,
+    get_buttons,
+    delete_all_buttons,
     enable_buttons,
     disable_buttons
 )
 
 from utils.states import (
-    BUTTON_TEXT_WAIT,
-    BUTTON_URL_WAIT
+    WAITING_BUTTON_TEXT,
+    WAITING_BUTTON_URL,
+    TEMP_BUTTON
 )
 
 
-TEMP_BUTTONS = {}
-
+# ==========================
+# BUTTON PANEL
+# ==========================
 
 @Client.on_callback_query(
-    filters.regex("^button_settings$")
+    filters.regex("^buttons_panel$")
 )
-async def button_settings(
+async def buttons_panel(
     client,
     query
 ):
@@ -39,6 +41,27 @@ async def button_settings(
         else "❌ Disabled"
     )
 
+    total = len(
+        data.get(
+            "buttons",
+            []
+        )
+    )
+
+    text = f"""
+🔘 BUTTON MANAGER
+
+━━━━━━━━━━━━━━
+
+Status:
+{status}
+
+Total Buttons:
+{total}
+
+━━━━━━━━━━━━━━
+"""
+
     keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(
@@ -48,7 +71,7 @@ async def button_settings(
         ],
         [
             InlineKeyboardButton(
-                "📋 View Buttons",
+                "👀 View Buttons",
                 callback_data="view_buttons"
             )
         ],
@@ -61,104 +84,133 @@ async def button_settings(
                 "❌ Disable",
                 callback_data="disable_buttons"
             )
+        ],
+        [
+            InlineKeyboardButton(
+                "🗑 Delete All",
+                callback_data="delete_all_buttons"
+            )
         ]
     ])
 
     await query.message.edit_text(
-        f"""
-🔘 BUTTON SETTINGS
-
-Status : {status}
-
-Manage Custom URL Buttons
-""",
+        text,
         reply_markup=keyboard
     )
 
 
+# ==========================
+# ADD BUTTON
+# ==========================
+
 @Client.on_callback_query(
     filters.regex("^add_button$")
 )
-async def add_button_start(
+async def add_button_callback(
     client,
     query
 ):
 
-    BUTTON_TEXT_WAIT[
+    WAITING_BUTTON_TEXT[
         query.from_user.id
     ] = True
 
-    await query.message.reply_text(
-        "✏ Send Button Text"
+    await query.message.edit_text(
+        """
+🔘 Send Button Text
+
+Example:
+
+Join Channel
+"""
     )
 
+
+# ==========================
+# BUTTON TEXT
+# ==========================
 
 @Client.on_message(
     filters.private &
     filters.text
 )
-async def button_text_handler(
+async def receive_button_text(
     client,
     message
 ):
 
     user_id = message.from_user.id
 
-    if user_id not in BUTTON_TEXT_WAIT:
+    if user_id not in WAITING_BUTTON_TEXT:
         return
 
-    BUTTON_TEXT_WAIT.pop(
+    WAITING_BUTTON_TEXT.pop(
         user_id
     )
 
-    TEMP_BUTTONS[user_id] = {
+    TEMP_BUTTON[user_id] = {
         "text": message.text
     }
 
-    BUTTON_URL_WAIT[user_id] = True
+    WAITING_BUTTON_URL[
+        user_id
+    ] = True
 
     await message.reply_text(
-        "🔗 Send Button URL"
+        """
+🌐 Send Button URL
+
+Example:
+
+https://t.me/YourChannel
+"""
     )
 
+
+# ==========================
+# BUTTON URL
+# ==========================
 
 @Client.on_message(
     filters.private &
     filters.text
 )
-async def button_url_handler(
+async def receive_button_url(
     client,
     message
 ):
 
     user_id = message.from_user.id
 
-    if user_id not in BUTTON_URL_WAIT:
+    if user_id not in WAITING_BUTTON_URL:
         return
 
-    BUTTON_URL_WAIT.pop(
+    WAITING_BUTTON_URL.pop(
         user_id
     )
 
-    text = TEMP_BUTTONS[
+    data = TEMP_BUTTON.pop(
         user_id
-    ]["text"]
+    )
 
     await add_button(
         user_id,
-        text,
+        data["text"],
         message.text
     )
 
-    TEMP_BUTTONS.pop(
-        user_id,
-        None
+    await enable_buttons(
+        user_id
     )
 
     await message.reply_text(
         "✅ Button Added Successfully"
     )
 
+
+# ==========================
+# VIEW BUTTONS
+# ==========================
 
 @Client.on_callback_query(
     filters.regex("^view_buttons$")
@@ -179,33 +231,32 @@ async def view_buttons(
 
     if not buttons:
 
-        return await query.message.reply_text(
-            "❌ No Buttons Found"
+        return await query.message.edit_text(
+            "❌ No Buttons Added"
         )
 
-    text = "📋 SAVED BUTTONS\n\n"
-
-    count = 1
+    text = "🔘 SAVED BUTTONS\n\n"
 
     for button in buttons:
 
         text += (
-            f"{count}. "
-            f"{button['text']}\n"
+            f"• {button['text']}\n"
             f"{button['url']}\n\n"
         )
 
-        count += 1
-
-    await query.message.reply_text(
+    await query.message.edit_text(
         text
     )
 
 
+# ==========================
+# ENABLE
+# ==========================
+
 @Client.on_callback_query(
     filters.regex("^enable_buttons$")
 )
-async def enable_btn(
+async def enable_buttons_handler(
     client,
     query
 ):
@@ -219,10 +270,14 @@ async def enable_btn(
     )
 
 
+# ==========================
+# DISABLE
+# ==========================
+
 @Client.on_callback_query(
     filters.regex("^disable_buttons$")
 )
-async def disable_btn(
+async def disable_buttons_handler(
     client,
     query
 ):
@@ -233,4 +288,25 @@ async def disable_btn(
 
     await query.answer(
         "Buttons Disabled ❌"
+    )
+
+
+# ==========================
+# DELETE ALL
+# ==========================
+
+@Client.on_callback_query(
+    filters.regex("^delete_all_buttons$")
+)
+async def delete_all_buttons_handler(
+    client,
+    query
+):
+
+    await delete_all_buttons(
+        query.from_user.id
+    )
+
+    await query.message.edit_text(
+        "🗑 All Buttons Deleted"
     )
