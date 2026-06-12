@@ -11,73 +11,91 @@ from database.tasks import (
     set_status
 )
 
-from core.progress import (
-    build_dashboard
-)
 
+# ==========================
+# MY TASKS PANEL
+# ==========================
 
-@Client.on_message(
-    filters.private &
-    filters.command("tasks")
+@Client.on_callback_query(
+    filters.regex("^my_tasks$")
 )
 async def my_tasks(
     client,
-    message
+    query
 ):
 
+    user_id = query.from_user.id
+
     cursor = await get_user_tasks(
-        message.from_user.id
+        user_id
     )
-
-    tasks = []
-
-    async for task in cursor:
-        tasks.append(task)
-
-    if not tasks:
-
-        return await message.reply_text(
-            "❌ No Tasks Found"
-        )
 
     keyboard = []
 
-    for task in tasks[:20]:
+    count = 0
 
-        task_id = task["task_id"]
+    async for task in cursor:
 
-        status = task.get(
-            "status",
-            "waiting"
+        count += 1
+
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    f"📂 Task {count}",
+                    callback_data=f"task_{task['task_id']}"
+                )
+            ]
         )
 
-        keyboard.append([
-            InlineKeyboardButton(
-                f"{status.upper()} | {task_id[:8]}",
-                callback_data=f"task_{task_id}"
-            )
-        ])
+    if not keyboard:
 
-    await message.reply_text(
-        "📋 YOUR TASKS",
+        return await query.message.edit_text(
+            """
+📂 MY TASKS
+
+━━━━━━━━━━━━━━
+
+❌ No Tasks Found
+"""
+        )
+
+    keyboard.append(
+        [
+            InlineKeyboardButton(
+                "🔙 Back",
+                callback_data="back_home"
+            )
+        ]
+    )
+
+    await query.message.edit_text(
+        """
+📂 MY TASKS
+
+Select A Task Below
+""",
         reply_markup=InlineKeyboardMarkup(
             keyboard
         )
     )
 
 
+# ==========================
+# TASK DETAILS
+# ==========================
+
 @Client.on_callback_query(
-    filters.regex("^task_(.+)")
+    filters.regex("^task_")
 )
-async def open_task(
+async def task_details(
     client,
     query
 ):
 
-    task_id = query.data.split(
-        "_",
-        1
-    )[1]
+    task_id = query.data.replace(
+        "task_",
+        ""
+    )
 
     task = await get_task(
         task_id
@@ -90,15 +108,34 @@ async def open_task(
             show_alert=True
         )
 
-    text = build_dashboard(
-        task
-    )
+    text = f"""
+📂 TASK DETAILS
+
+━━━━━━━━━━━━━━
+
+🆔 Task ID:
+{task['task_id']}
+
+📢 Destination:
+{task.get('destination_title')}
+
+📊 Status:
+{task.get('status')}
+
+📦 Total:
+{task.get('total')}
+
+✅ Forwarded:
+{task.get('forwarded')}
+
+━━━━━━━━━━━━━━
+"""
 
     keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(
-                "▶ Resume",
-                callback_data=f"resume_{task_id}"
+                "▶ Start",
+                callback_data=f"start_{task_id}"
             ),
             InlineKeyboardButton(
                 "⏸ Pause",
@@ -106,6 +143,10 @@ async def open_task(
             )
         ],
         [
+            InlineKeyboardButton(
+                "🔄 Resume",
+                callback_data=f"resume_{task_id}"
+            ),
             InlineKeyboardButton(
                 "⛔ Stop",
                 callback_data=f"stop_{task_id}"
@@ -125,28 +166,110 @@ async def open_task(
     )
 
 
+# ==========================
+# PAUSE
+# ==========================
+
 @Client.on_callback_query(
-    filters.regex("^delete_(.+)")
+    filters.regex("^pause_")
+)
+async def pause_task(
+    client,
+    query
+):
+
+    task_id = query.data.replace(
+        "pause_",
+        ""
+    )
+
+    await set_status(
+        task_id,
+        "paused"
+    )
+
+    await query.answer(
+        "Task Paused ⏸"
+    )
+
+
+# ==========================
+# RESUME
+# ==========================
+
+@Client.on_callback_query(
+    filters.regex("^resume_")
+)
+async def resume_task(
+    client,
+    query
+):
+
+    task_id = query.data.replace(
+        "resume_",
+        ""
+    )
+
+    await set_status(
+        task_id,
+        "running"
+    )
+
+    await query.answer(
+        "Task Resumed ▶"
+    )
+
+
+# ==========================
+# STOP
+# ==========================
+
+@Client.on_callback_query(
+    filters.regex("^stop_")
+)
+async def stop_task(
+    client,
+    query
+):
+
+    task_id = query.data.replace(
+        "stop_",
+        ""
+    )
+
+    await set_status(
+        task_id,
+        "stopped"
+    )
+
+    await query.answer(
+        "Task Stopped ⛔"
+    )
+
+
+# ==========================
+# DELETE
+# ==========================
+
+@Client.on_callback_query(
+    filters.regex("^delete_")
 )
 async def delete_task_handler(
     client,
     query
 ):
 
-    task_id = query.data.split(
-        "_",
-        1
-    )[1]
+    task_id = query.data.replace(
+        "delete_",
+        ""
+    )
 
     await delete_task(
         task_id
     )
 
-    await query.answer(
-        "Task Deleted ✅",
-        show_alert=True
-    )
-
     await query.message.edit_text(
-        "🗑 Task Deleted Successfully"
+        """
+🗑 Task Deleted Successfully
+"""
     )
