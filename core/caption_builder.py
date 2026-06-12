@@ -1,73 +1,46 @@
-import re
+def safe(value):
 
-
-def extract_index(text):
-
-    if not text:
+    if value is None:
         return ""
 
-    match = re.search(
-        r"Index\s*:\s*(.+)",
-        text,
-        re.IGNORECASE
-    )
-
-    if match:
-        return match.group(1).strip()
-
-    return ""
-
-
-def extract_batch(text):
-
-    if not text:
-        return ""
-
-    match = re.search(
-        r"Batch\s*:\s*(.+)",
-        text,
-        re.IGNORECASE
-    )
-
-    if match:
-        return match.group(1).strip()
-
-    return ""
+    return str(value)
 
 
 def build_caption(
     template,
     filename="",
     topic="",
-    original_caption="",
-    message_id=""
+    batch="",
+    message_id="",
+    original_caption=""
 ):
 
     if not template:
-        return original_caption
 
-    index = extract_index(
-        original_caption
-    )
-
-    batch = extract_batch(
-        original_caption
-    )
+        return original_caption or ""
 
     caption = template
 
     variables = {
 
-        "{filename}": filename,
+        "{filename}": safe(
+            filename
+        ),
 
-        "{topic}": topic,
+        "{topic}": safe(
+            topic
+        ),
 
-        "{index}": index,
+        "{batch}": safe(
+            batch
+        ),
 
-        "{batch}": batch,
-
-        "{message_id}": str(
+        "{message_id}": safe(
             message_id
+        ),
+
+        "{original_caption}": safe(
+            original_caption
         )
     }
 
@@ -75,7 +48,7 @@ def build_caption(
 
         caption = caption.replace(
             key,
-            str(value)
+            value
         )
 
     return caption
