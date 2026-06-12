@@ -8,7 +8,11 @@ LAST_LINK = {}
 
 DESTINATION = {}
 
+WAITING_DESTINATION = {}
+
 RENAME_MODE = {}
+
+WAITING_RENAME_TEXT = {}
 
 TASK_RUNNING = {}
 
@@ -68,47 +72,37 @@ WAITING_DELETE_TASK = {}
 def clear_task_states(user_id):
 
     FIRST_LINK.pop(user_id, None)
-
     LAST_LINK.pop(user_id, None)
-
     DESTINATION.pop(user_id, None)
-
+    WAITING_DESTINATION.pop(user_id, None)
     RENAME_MODE.pop(user_id, None)
+    WAITING_RENAME_TEXT.pop(user_id, None)
 
 
 def clear_caption_states(user_id):
 
     WAITING_CAPTION.pop(user_id, None)
-
     EDIT_CAPTION.pop(user_id, None)
 
 
 def clear_button_states(user_id):
 
     WAITING_BUTTON_TEXT.pop(user_id, None)
-
     WAITING_BUTTON_URL.pop(user_id, None)
-
     TEMP_BUTTON.pop(user_id, None)
 
 
 def clear_admin_states(user_id):
 
     WAITING_BROADCAST.pop(user_id, None)
-
     WAITING_BAN_USER.pop(user_id, None)
-
     WAITING_UNBAN_USER.pop(user_id, None)
-
     WAITING_DELETE_TASK.pop(user_id, None)
 
 
 def clear_all_states(user_id):
 
     clear_task_states(user_id)
-
     clear_caption_states(user_id)
-
     clear_button_states(user_id)
-
     clear_admin_states(user_id)
