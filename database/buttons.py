@@ -11,17 +11,20 @@ async def get_buttons(user_id):
 
     if not data:
 
-        default = {
+        data = {
+
             "user_id": user_id,
+
             "enabled": False,
+
             "buttons": []
         }
 
         await buttons.insert_one(
-            default
+            data
         )
 
-        return default
+        return data
 
     return data
 
@@ -64,6 +67,23 @@ async def delete_button(
                 }
             }
         }
+    )
+
+
+async def delete_all_buttons(
+    user_id
+):
+
+    await buttons.update_one(
+        {
+            "user_id": user_id
+        },
+        {
+            "$set": {
+                "buttons": []
+            }
+        },
+        upsert=True
     )
 
 
@@ -115,17 +135,31 @@ async def buttons_enabled(
     )
 
 
-async def clear_buttons(
+async def total_buttons(
     user_id
 ):
 
-    await buttons.update_one(
-        {
-            "user_id": user_id
-        },
-        {
-            "$set": {
-                "buttons": []
-            }
-        }
+    data = await get_buttons(
+        user_id
+    )
+
+    return len(
+        data.get(
+            "buttons",
+            []
+        )
+    )
+
+
+async def get_button_list(
+    user_id
+):
+
+    data = await get_buttons(
+        user_id
+    )
+
+    return data.get(
+        "buttons",
+        []
     )
