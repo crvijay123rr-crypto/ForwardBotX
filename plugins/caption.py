@@ -12,13 +12,19 @@ from database.captions import (
     delete_caption
 )
 
-from utils.states import CAPTION_WAIT
+from utils.states import (
+    WAITING_CAPTION
+)
 
+
+# ==========================
+# CAPTION PANEL
+# ==========================
 
 @Client.on_callback_query(
-    filters.regex("^caption_settings$")
+    filters.regex("^caption_panel$")
 )
-async def caption_settings(
+async def caption_panel(
     client,
     query
 ):
@@ -33,10 +39,35 @@ async def caption_settings(
         else "❌ Disabled"
     )
 
+    text = f"""
+📝 CAPTION MANAGER
+
+━━━━━━━━━━━━━━
+
+Status:
+{status}
+
+━━━━━━━━━━━━━━
+
+Variables:
+
+{{filename}}
+
+{{topic}}
+
+{{batch}}
+
+{{message_id}}
+
+{{original_caption}}
+
+━━━━━━━━━━━━━━
+"""
+
     keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(
-                "✏ Set Caption",
+                "📝 Set Caption",
                 callback_data="set_caption"
             )
         ],
@@ -58,45 +89,37 @@ async def caption_settings(
         ],
         [
             InlineKeyboardButton(
-                "🗑 Reset",
-                callback_data="reset_caption"
+                "🗑 Delete Caption",
+                callback_data="delete_caption"
             )
         ]
     ])
 
     await query.message.edit_text(
-        f"""
-📝 CAPTION SETTINGS
-
-Status : {status}
-
-Supported Variables:
-
-{{filename}}
-{{topic}}
-{{index}}
-{{batch}}
-{{message_id}}
-""",
+        text,
         reply_markup=keyboard
     )
 
 
+# ==========================
+# SET CAPTION
+# ==========================
+
 @Client.on_callback_query(
     filters.regex("^set_caption$")
 )
-async def set_caption_start(
+async def set_caption_callback(
     client,
     query
 ):
 
-    CAPTION_WAIT[
+    WAITING_CAPTION[
         query.from_user.id
     ] = True
 
-    await query.message.reply_text(
+    await query.message.edit_text(
         """
-✏ Send New Caption
+📝 Send Your New Caption
 
 Example:
 
@@ -104,10 +127,16 @@ Example:
 
 📂 {filename}
 
-🎯 {batch}
+━━━━━━━━━━━━━━
+
+Join @YourChannel
 """
     )
 
+
+# ==========================
+# RECEIVE CAPTION
+# ==========================
 
 @Client.on_message(
     filters.private &
@@ -120,10 +149,10 @@ async def save_caption(
 
     user_id = message.from_user.id
 
-    if user_id not in CAPTION_WAIT:
+    if user_id not in WAITING_CAPTION:
         return
 
-    CAPTION_WAIT.pop(
+    WAITING_CAPTION.pop(
         user_id
     )
 
@@ -132,10 +161,18 @@ async def save_caption(
         message.text
     )
 
+    await enable_caption(
+        user_id
+    )
+
     await message.reply_text(
         "✅ Caption Saved Successfully"
     )
 
+
+# ==========================
+# VIEW CAPTION
+# ==========================
 
 @Client.on_callback_query(
     filters.regex("^view_caption$")
@@ -149,19 +186,30 @@ async def view_caption(
         query.from_user.id
     )
 
-    await query.message.reply_text(
+    caption = data.get(
+        "caption",
+        "No Caption Set"
+    )
+
+    await query.message.edit_text(
         f"""
 📝 CURRENT CAPTION
 
-{data['caption']}
+━━━━━━━━━━━━━━
+
+{caption}
 """
     )
 
 
+# ==========================
+# ENABLE
+# ==========================
+
 @Client.on_callback_query(
     filters.regex("^enable_caption$")
 )
-async def enable_cap(
+async def enable_caption_handler(
     client,
     query
 ):
@@ -175,10 +223,14 @@ async def enable_cap(
     )
 
 
+# ==========================
+# DISABLE
+# ==========================
+
 @Client.on_callback_query(
     filters.regex("^disable_caption$")
 )
-async def disable_cap(
+async def disable_caption_handler(
     client,
     query
 ):
@@ -192,10 +244,14 @@ async def disable_cap(
     )
 
 
+# ==========================
+# DELETE
+# ==========================
+
 @Client.on_callback_query(
-    filters.regex("^reset_caption$")
+    filters.regex("^delete_caption$")
 )
-async def reset_cap(
+async def delete_caption_handler(
     client,
     query
 ):
@@ -204,6 +260,8 @@ async def reset_cap(
         query.from_user.id
     )
 
-    await query.answer(
-        "Caption Reset ✅"
+    await query.message.edit_text(
+        """
+🗑 Caption Deleted Successfully
+"""
     )
