@@ -15,7 +15,15 @@ DEFAULT_SETTINGS = {
 
     "auto_delete": False,
 
-    "auto_forward": True
+    "auto_forward": True,
+
+    # Advanced Settings
+
+    "auto_topic": True,
+
+    "auto_summary": True,
+
+    "rename_mode": "keep"
 }
 
 
@@ -59,6 +67,22 @@ async def update_setting(
             "$set": {
                 key: value
             }
+        },
+        upsert=True
+    )
+
+
+async def update_many_settings(
+    user_id,
+    data
+):
+
+    await settings.update_one(
+        {
+            "user_id": user_id
+        },
+        {
+            "$set": data
         },
         upsert=True
     )
@@ -141,6 +165,10 @@ async def delete_settings(user_id):
     )
 
 
+# ==========================
+# FEATURE CHECKERS
+# ==========================
+
 async def caption_enabled(user_id):
 
     data = await get_settings(
@@ -204,4 +232,32 @@ async def auto_delete_enabled(
     return data.get(
         "auto_delete",
         False
+    )
+
+
+async def auto_summary_enabled(
+    user_id
+):
+
+    data = await get_settings(
+        user_id
+    )
+
+    return data.get(
+        "auto_summary",
+        True
+    )
+
+
+async def rename_mode(
+    user_id
+):
+
+    data = await get_settings(
+        user_id
+    )
+
+    return data.get(
+        "rename_mode",
+        "keep"
     )
