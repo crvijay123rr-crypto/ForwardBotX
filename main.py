@@ -1,6 +1,8 @@
 import logging
-from pyrogram import Client, idle  # <--- 'idle' yahan import karna zaroori hai
+import asyncio
+from pyrogram import Client, idle
 from config import *
+from database.mongo import ping_database
 
 # Logging setup
 logging.basicConfig(
@@ -16,17 +18,32 @@ app = Client(
     plugins=dict(root="plugins")
 )
 
+async def start_bot():
+    # 1. Database Check (Sabse pehle ye hoga)
+    print("\n🔄 Connecting to Database...")
+    db_ok = await ping_database()
+    
+    if not db_ok:
+        print("❌ DATABASE CONNECTION FAILED. Exiting...")
+        return
+    
+    # 2. Bot Start
+    await app.start()
+    print("\n"
+          "━━━━━━━━━━━━━━━━━━━━━━\n"
+          "🚀 FORWARD BOT IS RUNNING\n"
+          "━━━━━━━━━━━━━━━━━━━━━━\n")
+    
+    # 3. Idle mode
+    await idle()
+    
+    # 4. Stop
+    await app.stop()
+    print("\n🛑 Bot Stopped.")
+
 if __name__ == "__main__":
-    print("\n🚀 FORWARD BOT IS STARTING...\n")
-    
-    # Bot start karein
-    app.start()
-    print(f"✅ Number of loaded handlers: {len(app.dispatcher.groups)}")
-    print("🤖 Bot is now running! Press Ctrl+C to stop.")
-    
-    # Sahi tarika: 'app.idle()' nahi, sirf 'idle()' call karein
-    idle()
-    
-    # Bot stop hone par
-    app.stop()
-    
+    try:
+        app.run(start_bot())
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        
