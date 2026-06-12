@@ -1,64 +1,59 @@
 import re
 
 
-def extract_topic(caption):
+TOPIC_PATTERNS = [
 
-    if not caption:
-        return None
+    r"Topic:\s*(.+)",
 
-    patterns = [
+    r"Subject:\s*(.+)",
 
-        r"Topic\s*:\s*(.+)",
+    r"Chapter:\s*(.+)",
 
-        r"topic\s*:\s*(.+)"
-    ]
-
-    for pattern in patterns:
-
-        match = re.search(
-            pattern,
-            caption,
-            re.IGNORECASE
-        )
-
-        if match:
-
-            topic = match.group(1)
-
-            topic = topic.split("\n")[0]
-
-            topic = topic.strip()
-
-            if topic:
-                return topic
-
-    return None
+    r"Unit:\s*(.+)"
+]
 
 
-def normalize_topic(topic):
+def clean_topic(topic):
 
     if not topic:
         return None
 
     topic = topic.strip()
 
-    topic = re.sub(
-        r"\s+",
-        " ",
-        topic
+    topic = topic.replace(
+        "\n",
+        ""
     )
 
-    return topic
-
-
-def detect_topic(caption):
-
-    topic = extract_topic(
-        caption
+    topic = topic.replace(
+        "\r",
+        ""
     )
 
-    topic = normalize_topic(
-        topic
-    )
+    return topic[:100]
 
-    return topic
+
+def detect_topic(text):
+
+    if not text:
+        return None
+
+    for pattern in TOPIC_PATTERNS:
+
+        match = re.search(
+            pattern,
+            text,
+            re.IGNORECASE
+        )
+
+        if match:
+
+            topic = match.group(
+                1
+            )
+
+            return clean_topic(
+                topic
+            )
+
+    return None
