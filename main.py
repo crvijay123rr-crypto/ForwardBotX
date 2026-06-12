@@ -1,3 +1,5 @@
+import logging
+logging.basicConfig(level=logging.INFO)
 from pyrogram import Client
 from config import *
 
