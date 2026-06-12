@@ -4,45 +4,88 @@ from pyrogram.types import (
 )
 
 
-def build_buttons(buttons_data):
+def build_buttons(
+    buttons_data
+):
 
     if not buttons_data:
         return None
 
     keyboard = []
+
     row = []
 
     for button in buttons_data:
 
-        text = button.get("text")
-        url = button.get("url")
+        text = button.get(
+            "text"
+        )
 
-        if not text or not url:
+        url = button.get(
+            "url"
+        )
+
+        if not text:
+            continue
+
+        if not url:
             continue
 
         row.append(
+
             InlineKeyboardButton(
                 text=text,
                 url=url
             )
+
         )
 
         if len(row) == 2:
-            keyboard.append(row)
+
+            keyboard.append(
+                row
+            )
+
             row = []
 
     if row:
-        keyboard.append(row)
+
+        keyboard.append(
+            row
+        )
 
     if not keyboard:
+
         return None
 
-    return InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(
+        keyboard
+    )
 
 
-def build_topic_buttons(topics):
+def build_single_button(
+    text,
+    url
+):
+
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    text=text,
+                    url=url
+                )
+            ]
+        ]
+    )
+
+
+def build_topic_buttons(
+    topics
+):
 
     if not topics:
+
         return None
 
     keyboard = []
@@ -53,21 +96,27 @@ def build_topic_buttons(topics):
             "topic_name"
         )
 
-        link = topic.get(
-            "first_message_link"
+        topic_link = topic.get(
+            "topic_link"
         )
 
-        if not topic_name or not link:
+        if not topic_name:
             continue
 
-        keyboard.append([
-            InlineKeyboardButton(
-                text=f"📚 {topic_name[:50]}",
-                url=link
-            )
-        ])
+        if not topic_link:
+            continue
+
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    text=f"📚 {topic_name}",
+                    url=topic_link
+                )
+            ]
+        )
 
     if not keyboard:
+
         return None
 
     return InlineKeyboardMarkup(
@@ -75,64 +124,27 @@ def build_topic_buttons(topics):
     )
 
 
-def build_mixed_buttons(
-    custom_buttons,
-    topic_buttons=None
+def build_control_buttons(
+    task_id
 ):
 
-    keyboard = []
-
-    row = []
-
-    if custom_buttons:
-
-        for button in custom_buttons:
-
-            text = button.get("text")
-            url = button.get("url")
-
-            if not text or not url:
-                continue
-
-            row.append(
-                InlineKeyboardButton(
-                    text=text,
-                    url=url
-                )
-            )
-
-            if len(row) == 2:
-                keyboard.append(row)
-                row = []
-
-        if row:
-            keyboard.append(row)
-
-    if topic_buttons:
-
-        for topic in topic_buttons:
-
-            name = topic.get(
-                "topic_name"
-            )
-
-            link = topic.get(
-                "first_message_link"
-            )
-
-            if not name or not link:
-                continue
-
-            keyboard.append([
-                InlineKeyboardButton(
-                    text=f"📚 {name[:50]}",
-                    url=link
-                )
-            ])
-
-    if not keyboard:
-        return None
-
     return InlineKeyboardMarkup(
-        keyboard
+        [
+            [
+                InlineKeyboardButton(
+                    "⏸ Pause",
+                    callback_data=f"pause_{task_id}"
+                ),
+                InlineKeyboardButton(
+                    "▶ Resume",
+                    callback_data=f"resume_{task_id}"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "⛔ Stop",
+                    callback_data=f"stop_{task_id}"
+                )
+            ]
+        ]
     )
