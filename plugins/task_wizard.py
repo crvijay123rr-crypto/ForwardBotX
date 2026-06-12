@@ -13,14 +13,22 @@ from database.tasks import (
 from utils.states import (
     FIRST_LINK,
     LAST_LINK,
-    DESTINATION
+    DESTINATION,
+    RENAME_MODE
 )
 
+
+# ==========================
+# NEW TASK
+# ==========================
 
 @Client.on_callback_query(
     filters.regex("^new_task$")
 )
-async def new_task(client, query):
+async def new_task(
+    client,
+    query
+):
 
     user_id = query.from_user.id
 
@@ -40,9 +48,17 @@ async def new_task(client, query):
 ━━━━━━━━━━━━━━
 
 🔗 Send First Message Link
+
+Example:
+
+https://t.me/channel/1
 """
     )
 
+
+# ==========================
+# MESSAGE HANDLER
+# ==========================
 
 @Client.on_message(
     filters.private &
@@ -55,7 +71,9 @@ async def task_handler(
 
     user_id = message.from_user.id
 
+    # ----------------------
     # FIRST LINK
+    # ----------------------
 
     if user_id in FIRST_LINK:
 
@@ -63,10 +81,22 @@ async def task_handler(
             user_id
         )
 
+        try:
+
+            first_id = int(
+                message.text.split("/")[-1]
+            )
+
+        except:
+
+            return await message.reply_text(
+                "❌ Invalid Link"
+            )
+
         await update_task(
             task_id,
             "first_link",
-            message.text
+            first_id
         )
 
         LAST_LINK[user_id] = task_id
@@ -79,7 +109,9 @@ async def task_handler(
 """
         )
 
+    # ----------------------
     # LAST LINK
+    # ----------------------
 
     if user_id in LAST_LINK:
 
@@ -87,10 +119,22 @@ async def task_handler(
             user_id
         )
 
+        try:
+
+            last_id = int(
+                message.text.split("/")[-1]
+            )
+
+        except:
+
+            return await message.reply_text(
+                "❌ Invalid Link"
+            )
+
         await update_task(
             task_id,
             "last_link",
-            message.text
+            last_id
         )
 
         DESTINATION[user_id] = task_id
@@ -102,6 +146,7 @@ async def task_handler(
 📢 Send Destination Channel
 
 Example:
+
 @mychannel
 
 or
@@ -110,7 +155,9 @@ or
 """
         )
 
+    # ----------------------
     # DESTINATION
+    # ----------------------
 
     if user_id in DESTINATION:
 
@@ -142,28 +189,39 @@ or
                 chat.username
             )
 
+            RENAME_MODE[user_id] = task_id
+
             keyboard = InlineKeyboardMarkup([
                 [
                     InlineKeyboardButton(
-                        "🚀 START FORWARD",
-                        callback_data=f"start_{task_id}"
+                        "📂 Keep Original",
+                        callback_data="keep_original"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "✏ Rename Files",
+                        callback_data="rename_files"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "⏭ Skip Rename",
+                        callback_data="skip_rename"
                     )
                 ]
             ])
 
             return await message.reply_text(
                 f"""
-✅ TASK CONFIGURED
+✅ Destination Saved
 
 📢 Channel:
 {chat.title}
 
-🆔 Channel ID:
-{chat.id}
-
 ━━━━━━━━━━━━━━
 
-Ready To Start
+Select Rename Mode
 """,
                 reply_markup=keyboard
             )
@@ -171,10 +229,126 @@ Ready To Start
         except Exception as e:
 
             return await message.reply_text(
-                f"""
-❌ Invalid Channel
+                f"❌ Error\n\n{e}"
+            )
 
-Error:
-{e}
-"""
+
+# ==========================
+# RENAME MODES
+# ==========================
+
+@Client.on_callback_query(
+    filters.regex("^keep_original$")
 )
+async def keep_original(
+    client,
+    query
+):
+
+    user_id = query.from_user.id
+
+    task_id = RENAME_MODE.pop(
+        user_id
+    )
+
+    await update_task(
+        task_id,
+        "rename_mode",
+        "keep"
+    )
+
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(
+                "🚀 START FORWARD",
+                callback_data=f"start_{task_id}"
+            )
+        ]
+    ])
+
+    await query.message.edit_text(
+        """
+📂 Original File Names Will Be Kept
+
+Task Ready To Start
+""",
+        reply_markup=keyboard
+    )
+
+
+@Client.on_callback_query(
+    filters.regex("^rename_files$")
+)
+async def rename_files(
+    client,
+    query
+):
+
+    user_id = query.from_user.id
+
+    task_id = RENAME_MODE.pop(
+        user_id
+    )
+
+    await update_task(
+        task_id,
+        "rename_mode",
+        "rename"
+    )
+
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(
+                "🚀 START FORWARD",
+                callback_data=f"start_{task_id}"
+            )
+        ]
+    ])
+
+    await query.message.edit_text(
+        """
+✏ File Rename Mode Enabled
+
+Task Ready To Start
+""",
+        reply_markup=keyboard
+    )
+
+
+@Client.on_callback_query(
+    filters.regex("^skip_rename$")
+)
+async def skip_rename(
+    client,
+    query
+):
+
+    user_id = query.from_user.id
+
+    task_id = RENAME_MODE.pop(
+        user_id
+    )
+
+    await update_task(
+        task_id,
+        "rename_mode",
+        "skip"
+    )
+
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(
+                "🚀 START FORWARD",
+                callback_data=f"start_{task_id}"
+            )
+        ]
+    ])
+
+    await query.message.edit_text(
+        """
+⏭ Rename Skipped
+
+Task Ready To Start
+""",
+        reply_markup=keyboard
+    )
