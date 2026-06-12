@@ -1,15 +1,7 @@
 from database.mongo import captions
 
 
-DEFAULT_CAPTION = """
-📚 {topic}
-
-📂 {filename}
-
-━━━━━━━━━━━━━━
-Powered By ForwardBotX
-━━━━━━━━━━━━━━
-"""
+DEFAULT_CAPTION = ""
 
 
 async def get_caption(user_id):
@@ -22,18 +14,20 @@ async def get_caption(user_id):
 
     if not data:
 
-        await captions.insert_one(
-            {
-                "user_id": user_id,
-                "enabled": False,
-                "caption": DEFAULT_CAPTION
-            }
-        )
+        data = {
 
-        return {
+            "user_id": user_id,
+
             "enabled": False,
+
             "caption": DEFAULT_CAPTION
         }
+
+        await captions.insert_one(
+            data
+        )
+
+        return data
 
     return data
 
@@ -100,7 +94,8 @@ async def delete_caption(
         },
         {
             "$set": {
-                "caption": DEFAULT_CAPTION
+                "caption": DEFAULT_CAPTION,
+                "enabled": False
             }
         },
         upsert=True
@@ -118,4 +113,18 @@ async def caption_enabled(
     return data.get(
         "enabled",
         False
+    )
+
+
+async def get_caption_text(
+    user_id
+):
+
+    data = await get_caption(
+        user_id
+    )
+
+    return data.get(
+        "caption",
+        DEFAULT_CAPTION
     )
