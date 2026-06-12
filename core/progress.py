@@ -1,66 +1,17 @@
-from datetime import datetime
+def generate_bar(percent):
 
-
-def progress_bar(current, total):
-
-    if total <= 0:
-        return "░░░░░░░░░░", 0
-
-    percent = int(
-        (current / total) * 100
-    )
+    total_blocks = 20
 
     filled = int(
-        percent / 10
+        (percent / 100) * total_blocks
     )
 
-    bar = (
+    empty = total_blocks - filled
+
+    return (
         "█" * filled
         +
-        "░" * (10 - filled)
-    )
-
-    return bar, percent
-
-
-def remaining_messages(
-    forwarded,
-    total
-):
-
-    remaining = total - forwarded
-
-    if remaining < 0:
-        remaining = 0
-
-    return remaining
-
-
-def get_status(
-    task_status
-):
-
-    status_map = {
-
-        "waiting":
-        "🟡 Waiting",
-
-        "running":
-        "🟢 Running",
-
-        "paused":
-        "⏸ Paused",
-
-        "stopped":
-        "🔴 Stopped",
-
-        "completed":
-        "✅ Completed"
-    }
-
-    return status_map.get(
-        task_status,
-        "❓ Unknown"
+        "░" * empty
     )
 
 
@@ -101,47 +52,120 @@ def build_dashboard(task):
         0
     )
 
-    status = get_status(
-        task.get(
-            "status",
-            "waiting"
+    status = task.get(
+        "status",
+        "waiting"
+    ).upper()
+
+    remaining = max(
+        total - forwarded,
+        0
+    )
+
+    percent = 0
+
+    if total > 0:
+
+        percent = int(
+            (
+                forwarded / total
+            ) * 100
         )
+
+    bar = generate_bar(
+        percent
     )
 
-    remaining = remaining_messages(
-        forwarded,
-        total
-    )
+    text = f"""
+╔════❰ FORWARD STATUS ❱════╗
 
-    bar, percent = progress_bar(
-        forwarded,
-        total
-    )
+📦 Total Messages : {total}
 
-    return f"""
-╔════❰ ғᴏʀᴡᴀʀᴅ sᴛᴀᴛᴜs ❱════╗
+✅ Successfully Forwarded : {forwarded}
 
-📦 ᴛᴏᴛᴀʟ ᴍᴇssᴀɢᴇs : {total}
+🔄 Remaining Messages : {remaining}
 
-✅ ғᴏʀᴡᴀʀᴅᴇᴅ : {forwarded}
+📚 Topics Found : {topics}
 
-🔄 ʀᴇᴍᴀɪɴɪɴɢ : {remaining}
+📑 Duplicate Messages : {duplicate}
 
-📚 ᴛᴏᴘɪᴄs : {topics}
+🗑 Deleted Messages : {deleted}
 
-📑 ᴅᴜᴘʟɪᴄᴀᴛᴇ : {duplicate}
+⏭ Skipped Messages : {skipped}
 
-🗑 ᴅᴇʟᴇᴛᴇᴅ : {deleted}
+🚫 Filtered Messages : {filtered}
 
-⏭ sᴋɪᴘᴘᴇᴅ : {skipped}
-
-🚫 ғɪʟᴛᴇʀᴇᴅ : {filtered}
-
-📈 ᴘʀᴏɢʀᴇss : {percent}%
+📈 Progress : {percent}%
 
 {bar}
 
-⚙ sᴛᴀᴛᴜs : {status}
+⚡ Current Status : {status}
 
-╚════════════════════╝
+╚══════════════════════╝
+"""
+
+    return text
+
+
+def build_completed_dashboard(task):
+
+    total = task.get(
+        "total",
+        0
+    )
+
+    forwarded = task.get(
+        "forwarded",
+        0
+    )
+
+    duplicate = task.get(
+        "duplicate",
+        0
+    )
+
+    deleted = task.get(
+        "deleted",
+        0
+    )
+
+    skipped = task.get(
+        "skipped",
+        0
+    )
+
+    filtered = task.get(
+        "filtered",
+        0
+    )
+
+    topics = task.get(
+        "topics_found",
+        0
+    )
+
+    return f"""
+╔════❰ FORWARD STATUS ❱════╗
+
+📦 Total Messages : {total}
+
+✅ Successfully Forwarded : {forwarded}
+
+📚 Topics Found : {topics}
+
+📑 Duplicate Messages : {duplicate}
+
+🗑 Deleted Messages : {deleted}
+
+⏭ Skipped Messages : {skipped}
+
+🚫 Filtered Messages : {filtered}
+
+📈 Progress : 100%
+
+████████████████████
+
+⚡ Current Status : COMPLETED
+
+╚══════❰ FINISHED ❱══════╝
 """
