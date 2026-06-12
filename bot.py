@@ -1,14 +1,14 @@
-from pyrogram import Client
-from config import *
+#from pyrogram import Client
+#from config import *
 
-app = Client(
-    "ForwardBotX",
-    api_id=API_ID,
-    api_hash=API_HASH,
-    bot_token=BOT_TOKEN,
-    plugins=dict(root="plugins")
-)
+#app = Client(
+   # "ForwardBotX",
+#    api_id=API_ID,
+  #  api_hash=API_HASH,
+#    bot_token=BOT_TOKEN,
+#    plugins=dict(root="plugins")
+)#
 
-print("🚀 ForwardBotX Started")
+#print("🚀 ForwardBotX Started")
 
-app.run()
+#app.run()
