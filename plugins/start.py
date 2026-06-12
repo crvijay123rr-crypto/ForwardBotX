@@ -1,85 +1,92 @@
-from pyrogram import Client
-from pyrogram import filters
-
+from pyrogram import Client, filters
 from pyrogram.types import (
     InlineKeyboardMarkup,
     InlineKeyboardButton
 )
 
-from database.users import add_user
+from database.users import (
+    add_user
+)
 
-@Client.on_message(filters.command("start"))
-async def start(client, message):
+
+START_TEXT = """
+🚀 FORWARD BOT PRO
+
+━━━━━━━━━━━━━━
+
+⚡ Ultra Fast Forwarding
+
+📚 Smart Topic Detection
+
+📝 Custom Captions
+
+🔘 Custom Buttons
+
+📊 Live Progress Tracking
+
+🔄 Pause / Resume / Stop
+
+━━━━━━━━━━━━━━
+
+Select An Option Below 👇
+"""
+
+
+@Client.on_message(
+    filters.private &
+    filters.command("start")
+)
+async def start_command(
+    client,
+    message
+):
 
     await add_user(
-        message.from_user.id
+        message.from_user
     )
 
-    buttons = InlineKeyboardMarkup([
-
+    keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(
-                "➕ NEW TASK",
+                "🚀 New Task",
                 callback_data="new_task"
             )
         ],
-
         [
             InlineKeyboardButton(
-                "⚙ SETTINGS",
-                callback_data="settings"
+                "📂 My Tasks",
+                callback_data="my_tasks"
             ),
-
             InlineKeyboardButton(
-                "📊 TASKS",
-                callback_data="tasks"
+                "⚙ Settings",
+                callback_data="settings_panel"
             )
         ],
-
         [
             InlineKeyboardButton(
-                "📝 CAPTION",
+                "📝 Caption",
                 callback_data="caption_panel"
             ),
-
             InlineKeyboardButton(
-                "🔘 BUTTONS",
-                callback_data="button_panel"
+                "🔘 Buttons",
+                callback_data="buttons_panel"
             )
         ],
-
         [
             InlineKeyboardButton(
-                "📚 TOPICS",
-                callback_data="topics"
-            ),
-
+                "📊 Statistics",
+                callback_data="stats_panel"
+            )
+        ],
+        [
             InlineKeyboardButton(
-                "📈 STATS",
-                callback_data="stats"
+                "ℹ Help",
+                callback_data="help_panel"
             )
         ]
     ])
 
-    text = """
-🚀 FORWARDBOT X
-
-⚡ High Speed Forward System
-
-📚 Smart Topic Detection
-
-📝 Custom Caption System
-
-🔘 Custom Button System
-
-📊 Live Progress Tracking
-
-━━━━━━━━━━━━━━━
-Version : 1.0
-━━━━━━━━━━━━━━━
-"""
-
     await message.reply_text(
-        text,
-        reply_markup=buttons
+        START_TEXT,
+        reply_markup=keyboard
     )
