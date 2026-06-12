@@ -4,130 +4,118 @@ from pyrogram.types import (
     InlineKeyboardButton
 )
 
-from database.tasks import get_task
-from database.settings import get_settings
-from core.progress import generate_progress
+import asyncio
 
+from database.tasks import (
+    get_task,
+    update_many,
+    set_status
+)
+
+from core.progress import (
+    build_dashboard
+)
+
+from plugins.forward_engine import (
+    start_forwarding
+)
+
+
+# ==========================
+# START TASK
+# ==========================
 
 @Client.on_callback_query(
-    filters.regex("^start_(.+)")
+    filters.regex("^start_")
 )
-async def start_forward(
+async def start_task(
     client,
     query
 ):
 
-    task_id = query.data.split("_", 1)[1]
+    task_id = query.data.replace(
+        "start_",
+        ""
+    )
 
-    task = await get_task(task_id)
+    task = await get_task(
+        task_id
+    )
 
     if not task:
+
         return await query.answer(
             "Task Not Found",
             show_alert=True
         )
 
-    settings = await get_settings(
-        query.from_user.id
+    first_id = int(
+        task["first_link"]
     )
 
-    total = task.get("total", 0)
-
-    forwarded = task.get(
-        "forwarded",
-        0
+    last_id = int(
+        task["last_link"]
     )
 
-    topics = task.get(
-        "topics_found",
-        0
+    total = (
+        last_id
+        -
+        first_id
+        +
+        1
     )
 
-    remaining = max(
-        total - forwarded,
-        0
+    await update_many(
+        task_id,
+        {
+            "total": total,
+            "remaining": total,
+            "status": "running"
+        }
     )
 
-    bar, percent = generate_progress(
-        forwarded,
-        total
+    task = await get_task(
+        task_id
     )
 
-    filename_mode = settings.get(
-        "filename_mode",
-        "keep_original"
+    dashboard = build_dashboard(
+        task
     )
 
     keyboard = InlineKeyboardMarkup([
-
         [
             InlineKeyboardButton(
                 "⏸ Pause",
                 callback_data=f"pause_{task_id}"
             ),
-
             InlineKeyboardButton(
                 "▶ Resume",
                 callback_data=f"resume_{task_id}"
             )
         ],
-
         [
             InlineKeyboardButton(
                 "⛔ Stop",
                 callback_data=f"stop_{task_id}"
             )
-        ],
-
-        [
-            InlineKeyboardButton(
-                "📚 Topics",
-                callback_data=f"topics_{task_id}"
-            ),
-
-            InlineKeyboardButton(
-                "🔄 Refresh",
-                callback_data=f"refresh_{task_id}"
-            )
         ]
     ])
 
-    text = f"""
-╔════❰ FORWARD STATUS ❱════╗
-
-🆔 Task:
-{task_id[:8]}
-
-📢 Destination:
-{task.get('destination_title','Unknown')}
-
-━━━━━━━━━━━━━━
-
-📦 Total : {total}
-
-✅ Forwarded : {forwarded}
-
-🔄 Remaining : {remaining}
-
-📚 Topics : {topics}
-
-📂 Filename :
-{filename_mode}
-
-📈 Progress :
-{percent}%
-
-{bar}
-
-━━━━━━━━━━━━━━
-
-⚙ Status :
-READY
-
-╚═══════════════════╝
-"""
-
-    await query.message.edit_text(
-        text,
+    status_message = await query.message.reply_text(
+        dashboard,
         reply_markup=keyboard
+    )
+
+    asyncio.create_task(
+
+        start_forwarding(
+            client,
+            task_id,
+            status_message
+        )
+
+    )
+
+    await query.answer(
+        "Forward Started 🚀"
     )
